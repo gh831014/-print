@@ -41,17 +41,47 @@ export const AiService = {
 
         if (model === AIModel.GEMINI) {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-            const response = await ai.models.generateContent({
-                model: 'gemini-3-flash-preview',
-                contents: [
-                    { role: 'user', parts: [{ text: systemPrompt + "\n\n" + userMessage }] }
-                ],
-                config: {
-                    responseMimeType: "application/json"
+            
+            let lastError: any;
+            // Retry logic for 429 errors (up to 3 attempts with exponential backoff)
+            for (let attempt = 0; attempt < 3; attempt++) {
+                try {
+                    const response = await ai.models.generateContent({
+                        model: 'gemini-3-flash-preview',
+                        contents: [
+                            { role: 'user', parts: [{ text: systemPrompt + "\n\n" + userMessage }] }
+                        ],
+                        config: {
+                            responseMimeType: "application/json"
+                        }
+                    });
+                    const text = response.text || "{}";
+                    return JSON.parse(text) as AIAnalysisResult;
+                } catch (e: any) {
+                    lastError = e;
+                    const isRateLimit = e.status === 429 || e.code === 429 || (e.message && e.message.includes('429'));
+                    
+                    if (isRateLimit && attempt < 2) {
+                        // Wait: 1s, 2s
+                        const delay = Math.pow(2, attempt) * 1000;
+                        console.warn(`Gemini 429 hit, retrying in ${delay}ms...`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    }
+                    // If not rate limit or max retries reached, break loop
+                    break;
                 }
-            });
-            const text = response.text || "{}";
-            return JSON.parse(text) as AIAnalysisResult;
+            }
+
+            // If we are here, it failed. Throw a user-friendly error if it was a 429.
+            if (lastError) {
+                 const isRateLimit = lastError.status === 429 || lastError.code === 429 || (lastError.message && lastError.message.includes('429'));
+                 if (isRateLimit) {
+                     throw new Error("AI 服务繁忙 (429)，请稍后再试或检查配额。");
+                 }
+                 throw lastError;
+            }
+            throw new Error("Unknown AI Error");
 
         } else {
             // Qwen (OpenAI Compatible)

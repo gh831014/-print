@@ -138,9 +138,9 @@ const App: React.FC = () => {
       const result = await AiService.analyzePrompt(aiModel, currentPrompt.content, currentPrompt.title);
       setAiResult(result);
       setViewMode(ViewMode.PREVIEW);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      showToast('AI 分析失败，请检查配置', 'error');
+      showToast(e.message || 'AI 分析失败，请检查配置', 'error');
     } finally {
       setIsAnalyzing(false);
     }

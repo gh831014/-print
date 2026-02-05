@@ -6,7 +6,7 @@ export const FUNCTIONAL_TEMPLATES: Template[] = [
         name: '信息架构',
         content: `
 ### 功能模块：信息架构 (Information Architecture)
-- **布局模式**：[请选择：上左中右下 | 左中右 | 左右 | 上下]
+- **布局模式**：[请选择：左中右 | 上左右下 | 左右 | 上左中右下 | 上下]
 - **区域定义**：
   1. **Header (顶部导航)**: [Logo, 全局搜索, 消息通知, 用户头像] - *建议固定顶部，z-index 最高*
   2. **Sidebar (左侧导航)**: [功能菜单树, 快捷入口] - *建议支持折叠，释放主屏空间*
